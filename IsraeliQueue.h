@@ -25,7 +25,7 @@ typedef enum { ISRAELIQUEUE_SUCCESS, ISRAELIQUEUE_ALLOC_FAILED, ISRAELIQUEUE_BAD
  * to the new object. In case of failure, return NULL.*/
 IsraeliQueue IsraeliQueueCreate(FriendshipFunction *, ComparisonFunction, int, int);
 
-/**Returns a new queue with the same elements as the parameter. If the parameter is NULL,
+/**Returns a new queueStart with the same elements as the parameter. If the parameter is NULL,
  * NULL is returned.*/
 IsraeliQueue IsraeliQueueClone(IsraeliQueue q);
 
@@ -56,29 +56,29 @@ IsraeliQueueError IsraeliQueueUpdateFriendshipThreshold(IsraeliQueue, int);
  * @param friendship_threshold: a new rivalry threshold for the IsraeliQueue*/
 IsraeliQueueError IsraeliQueueUpdateRivalryThreshold(IsraeliQueue, int);
 
-/**Returns the number of elements of the given queue. If the parameter is NULL, 0
+/**Returns the number of elements of the given queueStart. If the parameter is NULL, 0
  * is returned.*/
 int IsraeliQueueSize(IsraeliQueue);
 
-/**Removes and returns the foremost element of the provided queue. If the parameter
- * is NULL or a pointer to an empty queue, NULL is returned.*/
+/**Removes and returns the foremost element of the provided queueStart. If the parameter
+ * is NULL or a pointer to an empty queueStart, NULL is returned.*/
 void* IsraeliQueueDequeue(IsraeliQueue);
 
 /**@param item: an object comparable to the objects in the IsraeliQueue
  *
- * Returns whether the queue contains an element equal to item. If either
+ * Returns whether the queueStart contains an element equal to item. If either
  * parameter is NULL, false is returned.*/
 bool IsraeliQueueContains(IsraeliQueue, void *);
 
-/**Advances each item in the queue to the foremost position accessible to it,
- * from the back of the queue frontwards.*/
+/**Advances each item in the queueStart to the foremost position accessible to it,
+ * from the back of the queueStart frontwards.*/
 IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue);
 
 /**@param q_arr: a NULL-terminated array of IsraeliQueues
- * @param ComparisonFunction: a comparison function for the merged queue
+ * @param ComparisonFunction: a comparison function for the merged queueStart
  *
- * Merges all queues in q_arr into a single new queue, with parameters the parameters described
- * in the exercise. Each queue in q_arr enqueues its head in the merged queue, then lets the next
+ * Merges all queues in q_arr into a single new queueStart, with parameters the parameters described
+ * in the exercise. Each queueStart in q_arr enqueues its head in the merged queueStart, then lets the next
  * one enqueue an item, in the order defined by q_arr. In the event of any error during execution, return NULL.*/
 IsraeliQueue IsraeliQueueMerge(IsraeliQueue*,ComparisonFunction);
 
