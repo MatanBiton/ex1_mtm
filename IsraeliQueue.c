@@ -1,26 +1,79 @@
 #include "IsraeliQueue.h"
 #include <stdlib.h>
+#include <stdbool.h>
+
+int* createFriendsEnemiesArr(IsraeliQueue israeliQueue, void* person);
 
 typedef struct Node_t
 {
     struct Node_t *prev;
     struct Node_t *next;
     void* value;
+    int friendsAdded;
+    int enemiesBlocked;
 } * Node;
 
 struct IsraeliQueue_t{
     FriendshipFunction* friendshipFunctions;
-    Node queueStart;
-    Node queueEnd;
+    Node queueStart; //where people join the queue
+    Node queueEnd; //where people leave the queue
     ComparisonFunction comparisonFunction;
     int friendshipThreshold;
     int rivalryThreshold;
     int length;
 };
 
+Node copyNode(Node node){
+    Node newNode = NULL;
+    newNode->next = node->next;
+    newNode->prev = node->prev;
+    newNode->next = node->next;
+    newNode->friendsAdded = node->friendsAdded;
+    newNode->enemiesBlocked = node->enemiesBlocked;
+    return newNode;
+}
+
+int getFunctionsArrLength(FriendshipFunction* friendshipFunctions){
+    int i = 0;
+    while(*(i+friendshipFunctions)){
+        i++;
+    }
+    return i;
+}
+
+int* createFriendsEnemiesArr(IsraeliQueue israeliQueue, void* person){
+    int* arr = (int*) malloc(sizeof(int) * israeliQueue->length);
+    for (int i = 0; i < israeliQueue->length; ++i) {
+        arr[i] = 0;
+    }
+    Node current = israeliQueue->queueStart;
+    for (int i = 0; i < israeliQueue->length; ++i) {
+        int sum = 0;
+        int k = 0;
+        while(*(k + israeliQueue->friendshipFunctions)){
+            int value = israeliQueue->friendshipFunctions[k](person, current->value);
+            if(value > israeliQueue->friendshipThreshold){
+                arr[i] = 1;
+            } else{
+                sum += value;
+            }
+        }
+        if (arr[i] != 0){
+            if (sum / getFunctionsArrLength(israeliQueue->friendshipFunctions) < israeliQueue->rivalryThreshold){
+                arr[i] = -1;
+            }
+        }
+        current = current->next;
+    }
+    return arr;
+}
+
+
 IsraeliQueue IsraeliQueueCreate(FriendshipFunction * friendshipFunction, ComparisonFunction comparisonFunction,
                                 int friendshipThreshold, int rivalryThreshold){
-    if (!friendshipFunction || !comparisonFunction) return NULL;
+    if (!friendshipFunction || !comparisonFunction) {
+        return NULL;
+    }
     IsraeliQueue israeliQueue = malloc(sizeof(*israeliQueue));
     if (!israeliQueue) {
         free(israeliQueue);
@@ -31,6 +84,8 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction * friendshipFunction, Compari
     Node queue = NULL;
     queue->next = NULL;
     queue->value = NULL;
+    queue->enemiesBlocked = 0;
+    queue->friendsAdded = 0;
     israeliQueue->queueStart = queue;
     israeliQueue->queueEnd = queue;
     israeliQueue->friendshipThreshold = friendshipThreshold;
@@ -46,43 +101,56 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue q){
         free(newIsraeliQueue);
         return NULL;
     }
+
     newIsraeliQueue->friendshipThreshold = q->friendshipThreshold;
     newIsraeliQueue->rivalryThreshold = q->rivalryThreshold;
-    Node newQueue = NULL;
-    Node first = newQueue;
-    Node temp = q->queueStart;
-    bool isStart = true;
-    while(temp){
-        if (isStart) {
-            newQueue->value = temp->value;
-            newQueue->next = temp->next;
-            isStart = false;
 
-        } else {
-            newQueue->value = temp->value;
-            newQueue->next = temp->next;
-            newQueue->prev = temp->prev;
-        }
-        newQueue = (Node) newQueue->next;
-        temp = (Node) temp->next;
+    newIsraeliQueue->length = q->length;
+
+    Node queueStart = NULL;
+    queueStart->prev = NULL;
+    queueStart->value = q->queueStart->value;
+    queueStart->friendsAdded = q->queueStart->friendsAdded;
+    queueStart->enemiesBlocked = q->queueStart->enemiesBlocked;
+
+    Node currentNode = queueStart;
+    Node currentOriginalNode = q->queueStart->next;
+
+    while (currentOriginalNode){
+        Node temp = NULL;
+        temp->value = currentOriginalNode->value;
+        temp->friendsAdded = currentOriginalNode->friendsAdded;
+        temp->enemiesBlocked = currentOriginalNode->enemiesBlocked;
+        temp->prev = currentOriginalNode->prev;
+        currentNode->next = temp;
+        currentOriginalNode = currentOriginalNode->next;
+        currentNode = currentNode->next;
     }
-    newQueue = first;
-    newIsraeliQueue->queueStart = newQueue;
-    newIsraeliQueue->queueEnd = q->queueEnd;
-    FriendshipFunction* newFriendshipFunctions = malloc(q->length* sizeof(FriendshipFunction));
-    if (!newFriendshipFunctions){
-        free(newFriendshipFunctions);
-        return NULL;
-    }
-    newIsraeliQueue->friendshipFunctions = newFriendshipFunctions;
-    int i = 0;
-    while (*(q->friendshipFunctions + i)){
-        newIsraeliQueue->friendshipFunctions[i] = q->friendshipFunctions[i];
+
+    Node queueEnd = NULL;
+    queueEnd->value = q->queueEnd->value;
+    queueEnd->enemiesBlocked = q->queueEnd->enemiesBlocked;
+    queueEnd->friendsAdded = q->queueEnd->friendsAdded;
+    queueEnd->prev = q->queueEnd->prev;
+    queueEnd->next = NULL;
+
+    newIsraeliQueue->queueStart = queueStart;
+    newIsraeliQueue->queueEnd = queueEnd;
+
+    int length = 0, i  = 0;
+    while(*(i + q->friendshipFunctions)){
+        length++;
         i++;
     }
-    newIsraeliQueue->length = q->length;
+
+    FriendshipFunction* newFriendShips = malloc(sizeof(newFriendShips) * (length));
+    i = 0;
+    while(*(i + q->friendshipFunctions)){
+        newFriendShips[i] = q->friendshipFunctions[i];
+        i++;
+    }
+    newIsraeliQueue->friendshipFunctions = newFriendShips;
     newIsraeliQueue->comparisonFunction = q->comparisonFunction;
-    return newIsraeliQueue;
 }
 
 void IsraeliQueueDestroy(IsraeliQueue israeliQueue){
@@ -94,10 +162,15 @@ void IsraeliQueueDestroy(IsraeliQueue israeliQueue){
         next = temp;
     }
     free(israeliQueue->queueEnd);
+    free(israeliQueue->queueEnd);
+    free(israeliQueue);
 }
 
 //TODO: add error
 IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue israeliQueue, FriendshipFunction friendshipFunction){
+    if (!israeliQueue || !friendshipFunction){
+        return ISRAELI_QUEUE_ERROR;
+    }
     int n = 0;
     FriendshipFunction* temp = israeliQueue->friendshipFunctions;
     while(temp){
@@ -154,13 +227,15 @@ bool IsraeliQueueContains(IsraeliQueue israeliQueue, void * item){
 }
 
 void* IsraeliQueueDequeue(IsraeliQueue israeliQueue){
-    if (!israeliQueue || !israeliQueue->queueStart || !israeliQueue->queueEnd){
-        return NULL;
-    }
-    Node temp = israeliQueue->queueEnd;
-    Node prev = temp->prev;
-    prev->next = NULL;
-    void* value = temp->value;
-    free(temp);
-    return value;
+
 }
+
+IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue israeliQueue, void * person){
+    if (!israeliQueue || !person){
+        return ISRAELI_QUEUE_ERROR;
+    }
+    int* friendsEnemiesArr = createFriendsEnemiesArr(israeliQueue, person);
+    int length = israeliQueue->length;
+
+}
+
