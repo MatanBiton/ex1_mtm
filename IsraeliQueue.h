@@ -11,21 +11,14 @@ typedef struct IsraeliQueue_t * IsraeliQueue;
 typedef int (*FriendshipFunction)(void*,void*);
 typedef int (*ComparisonFunction)(void*,void*);
 
-typedef enum { ISRAELIQUEUE_SUCCESS, ISRAELIQUEUE_ALLOC_FAILED, ISRAELIQUEUE_BAD_PARAM, ISRAELI_QUEUE_ERROR } IsraeliQueueError;
+typedef enum { ISRAELIQUEUE_SUCCESS, ISRAELIQUEUE_ALLOC_FAILED, ISRAELIQUEUE_BAD_PARAM } IsraeliQueueError;
 
-/**Error clarification:
- * ISRAELIQUEUE_SUCCESS: Indicates the function has completed its task successfully with no errors.
- * ISRAELIQUEUE_ALLOC_FAILED: Indicates memory allocation failed during the execution of the function.
- * ISRAELIQUEUE_BAD_PARAM: Indicates an illegal parameter was passed.
- * ISRAELI_QUEUE_ERROR: Indicates any error beyond the above.
- * */
-
-/**Creates a new IsraeliQueue_t object with the provided friendship functions, a NULL-terminated array,
+/**Creates a new IsraeliQueue_t object with the provided friendship functions,
  * comparison function, friendship threshold and rivalry threshold. Returns a pointer
- * to the new object. In case of failure, return NULL.*/
+ * to the new object.*/
 IsraeliQueue IsraeliQueueCreate(FriendshipFunction *, ComparisonFunction, int, int);
 
-/**Returns a new queueStart with the same elements as the parameter. If the parameter is NULL,
+/**Returns a new queue with the same elements as the parameter. If the parameter is NULL,
  * NULL is returned.*/
 IsraeliQueue IsraeliQueueClone(IsraeliQueue q);
 
@@ -56,30 +49,30 @@ IsraeliQueueError IsraeliQueueUpdateFriendshipThreshold(IsraeliQueue, int);
  * @param friendship_threshold: a new rivalry threshold for the IsraeliQueue*/
 IsraeliQueueError IsraeliQueueUpdateRivalryThreshold(IsraeliQueue, int);
 
-/**Returns the number of elements of the given queueStart. If the parameter is NULL, 0
+/**Returns the number of elements of the given queue. If the parameter is NULL, 0
  * is returned.*/
 int IsraeliQueueSize(IsraeliQueue);
 
-/**Removes and returns the foremost element of the provided queueStart. If the parameter
- * is NULL or a pointer to an empty queueStart, NULL is returned.*/
+/**Removes and returns the foremost element of the provided queue. If the parameter
+ * is NULL or a pointer to an empty queue, NULL is returned.*/
 void* IsraeliQueueDequeue(IsraeliQueue);
 
 /**@param item: an object comparable to the objects in the IsraeliQueue
  *
- * Returns whether the queueStart contains an element equal to item. If either
+ * Returns whether the queue contains an element equal to item. If either
  * parameter is NULL, false is returned.*/
 bool IsraeliQueueContains(IsraeliQueue, void *);
 
-/**Advances each item in the queueStart to the foremost position accessible to it,
- * from the back of the queueStart frontwards.*/
+/**Advances each item in the queue to the foremost position accessible to it,
+ * from the back of the queue frontwards.*/
 IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue);
 
 /**@param q_arr: a NULL-terminated array of IsraeliQueues
- * @param ComparisonFunction: a comparison function for the merged queueStart
+ * @param ComparisonFunction: a comparison function for the merged queue
  *
- * Merges all queues in q_arr into a single new queueStart, with parameters the parameters described
- * in the exercise. Each queueStart in q_arr enqueues its head in the merged queueStart, then lets the next
- * one enqueue an item, in the order defined by q_arr. In the event of any error during execution, return NULL.*/
+ * Merges all queues in q_arr into a single new queue, with parameters the parameters described
+ * in the exercise. Each queue in q_arr enqueues its head in the merged queue, then lets the next
+ * one enqueue an item, in the order defined by q_arr.*/
 IsraeliQueue IsraeliQueueMerge(IsraeliQueue*,ComparisonFunction);
 
 #endif //PROVIDED_ISRAELIQUEUE_H
