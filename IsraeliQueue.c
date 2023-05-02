@@ -349,7 +349,7 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue israeliQueue){
 }
 
 
-//TODO: add friendship functions
+//TODO: add friendship functions now
 IsraeliQueue IsraeliQueueMerge(IsraeliQueue* israeliQueues,ComparisonFunction comparisonFunction){
     if (!israeliQueues || !comparisonFunction){
         return NULL;
