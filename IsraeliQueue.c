@@ -13,6 +13,7 @@ typedef struct Node_t
     void* value;
     int friendsAdded;
     int enemiesBlocked;
+    bool improvedPosition;
 } * Node;
 
 struct IsraeliQueue_t{
@@ -27,11 +28,12 @@ struct IsraeliQueue_t{
 
 int* createFriendsEnemiesArr(IsraeliQueue israeliQueue, void* person);
 bool inUsed(void** used, void* person);
+void setImprovedFlag(IsraeliQueue israeliQueue);
 void** updateUsedArray(void** used, int size);
 int getTotalLengths(IsraeliQueue* israeliQueues);
-void setAllFriendshipFunctions(IsraeliQueue* israeliQueues, IsraeliQueue newIsraeliQueue);
-void setFriendshipThreshold(IsraeliQueue* israeliQueues, IsraeliQueue newIsraeliQueue);
-void setRivalryThreshold(IsraeliQueue* israeliQueues, IsraeliQueue newIsraeliQueue);
+FriendshipFunction* getAllFriendshipFunctions(IsraeliQueue* israeliQueues);
+int getFriendshipThreshold(IsraeliQueue* israeliQueues);
+int getRivalryThreshold(IsraeliQueue* israeliQueues);
 int getMaxLength(IsraeliQueue* israeliQueue);
 Node getNodeAtPosition(Node start, int position);
 
@@ -64,6 +66,7 @@ int* createFriendsEnemiesArr(IsraeliQueue israeliQueue, void* person){
             } else{
                 sum += value;
             }
+            k++;
         }
         if (arr[i] != 0){
             if (sum / getFunctionsArrLength(israeliQueue->friendshipFunctions)
@@ -77,9 +80,9 @@ int* createFriendsEnemiesArr(IsraeliQueue israeliQueue, void* person){
 }
 
 
-IsraeliQueue IsraeliQueueCreate(FriendshipFunction * friendshipFunction, ComparisonFunction comparisonFunction,
+IsraeliQueue IsraeliQueueCreate(FriendshipFunction * friendshipFunctions, ComparisonFunction comparisonFunction,
                                 int friendshipThreshold, int rivalryThreshold){
-    if (!friendshipFunction || !comparisonFunction) {
+    if (!friendshipFunctions || !comparisonFunction) {
         return NULL;
     }
     IsraeliQueue israeliQueue = malloc(sizeof(*israeliQueue));
@@ -87,10 +90,11 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction * friendshipFunction, Compari
         free(israeliQueue);
         return NULL;
     }
-    israeliQueue->friendshipFunctions = friendshipFunction;
+    israeliQueue->friendshipFunctions = friendshipFunctions;
     israeliQueue->comparisonFunction = comparisonFunction;
     Node queue = malloc(sizeof(queue));
     queue->next = NULL;
+    queue->prev = NULL;
     queue->value = NULL;
     queue->enemiesBlocked = 0;
     queue->friendsAdded = 0;
@@ -181,7 +185,7 @@ IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue israeliQueue, Fr
     }
     int n = 0;
     FriendshipFunction* temp = israeliQueue->friendshipFunctions;
-    while(temp){
+    while(temp != NULL){
         n++;
         temp+= 1;
     }
@@ -296,6 +300,7 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue israeliQueue, void * person){
                 if (first){
                     israeliQueue->queueEnd = newPerson;
                 }
+                israeliQueue->length++;
                 return ISRAELIQUEUE_SUCCESS;
             } else{
                 current->enemiesBlocked++;
@@ -315,6 +320,7 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue israeliQueue, void * person){
         newPerson->friendsAdded = 0;
         israeliQueue->queueStart->prev = newPerson;
         israeliQueue->queueStart = newPerson;
+        israeliQueue->length++;
         return ISRAELIQUEUE_SUCCESS;
     }
 }
@@ -323,24 +329,14 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue israeliQueue){
     if (!israeliQueue){
         return ISRAELIQUEUE_BAD_PARAM;
     }
-    void** used = malloc(sizeof(void*));
-    if (!used){
-        free(used);
-        return ISRAELIQUEUE_ALLOC_FAILED;
-    }
+    setImprovedFlag(israeliQueue);
     int index = 0;
     Node current = israeliQueue->queueStart;
     while (current){
-        if (!inUsed(used, current->value)) {
+        if (!current->improvedPosition){
             current->next->prev = current->prev;
             IsraeliQueueEnqueue(israeliQueue, current->value);
-            used[index] = current->next;
-            used = updateUsedArray(used, index+1);
-            if (!used){
-                free(used);
-                free(current);
-                return ISRAELIQUEUE_ALLOC_FAILED;
-            }
+            current->improvedPosition = true;
             index++;
         }
         current = current->next;
@@ -349,20 +345,20 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue israeliQueue){
 }
 
 
-//TODO: add friendship functions now
 IsraeliQueue IsraeliQueueMerge(IsraeliQueue* israeliQueues,ComparisonFunction comparisonFunction){
     if (!israeliQueues || !comparisonFunction){
         return NULL;
     }
     int maxLength = getMaxLength(israeliQueues);
-    IsraeliQueue newIsraeliQueue = malloc(sizeof(newIsraeliQueue));
-    newIsraeliQueue->length = getTotalLengths(israeliQueues);
-    setAllFriendshipFunctions(israeliQueues, newIsraeliQueue);
-    setFriendshipThreshold(israeliQueues, newIsraeliQueue);
-    setRivalryThreshold(israeliQueues, newIsraeliQueue);
-    newIsraeliQueue->comparisonFunction = comparisonFunction;
+    int length = getTotalLengths(israeliQueues);
+    FriendshipFunction* friendshipFunctions = getAllFriendshipFunctions(israeliQueues);
+    int friendshipThreshold = getFriendshipThreshold(israeliQueues);
+    int rivalryThreshold = getRivalryThreshold(israeliQueues);
+    IsraeliQueue newIsraeliQueue = IsraeliQueueCreate(friendshipFunctions, comparisonFunction,
+                                                            friendshipThreshold, rivalryThreshold);
+    newIsraeliQueue->length = length;
     bool first = true;
-    Node current, newNode;
+    Node current = malloc(sizeof(current)), newNode = malloc(sizeof(newNode));
     for (int i = 0; i < maxLength; ++i) {
         int currentIndex = 0;
         while(*(currentIndex + israeliQueues)){
@@ -382,9 +378,8 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* israeliQueues,ComparisonFunction co
             currentIndex++;
         }
     }
-    free(current);
-    free(newNode);
     newIsraeliQueue->queueEnd = getNodeAtPosition(newIsraeliQueue->queueStart, newIsraeliQueue->length - 1);
+
     return newIsraeliQueue;
 }
 
@@ -418,35 +413,45 @@ int getTotalLengths(IsraeliQueue* israeliQueues){
     return sum;
 }
 
-void setAllFriendshipFunctions(IsraeliQueue* israeliQueues, IsraeliQueue newIsraeliQueue){
+FriendshipFunction* getAllFriendshipFunctions(IsraeliQueue* israeliQueues){
     int i = 0;
+    FriendshipFunction* friendshipFunctions = malloc(sizeof(FriendshipFunction));
+    int index = 0;
     while (*(i + israeliQueues)){
         int j = 0;
         while (*(j + israeliQueues[i]->friendshipFunctions)){
-            IsraeliQueueAddFriendshipMeasure(newIsraeliQueue,
-                                             israeliQueues[i]->friendshipFunctions[j]);
+            friendshipFunctions[index] = israeliQueues[i]->friendshipFunctions[j];
+            index++;
+            FriendshipFunction* temp = realloc(friendshipFunctions, (index+1)* sizeof(FriendshipFunction));
+            if (!temp){
+                free(friendshipFunctions);
+                return NULL;
+            }
+            friendshipFunctions = temp;
             j++;
         }
         i++;
     }
+    friendshipFunctions[index] = NULL;
+    return friendshipFunctions;
 }
 
-void setFriendshipThreshold(IsraeliQueue* israeliQueues,IsraeliQueue newIsraeliQueue){
+int getFriendshipThreshold(IsraeliQueue* israeliQueues){
     int sum = 0, index = 0;
     while (*(israeliQueues+index)){
         sum+= israeliQueues[index]->friendshipThreshold;
         index++;
     }
-    IsraeliQueueUpdateFriendshipThreshold(newIsraeliQueue, sum / index);
+    return sum / index;
 }
 
-void setRivalryThreshold(IsraeliQueue* israeliQueues,IsraeliQueue newIsraeliQueue){
+int getRivalryThreshold(IsraeliQueue* israeliQueues){
     int mult = 1, index = 0;
     while(*(index + israeliQueues)){
         mult *= israeliQueues[index]->rivalryThreshold;
         index++;
     }
-    IsraeliQueueUpdateRivalryThreshold(newIsraeliQueue, pow(mult, 1./index));
+    return pow(mult, 1./index);
 }
 
 void** updateUsedArray(void** used, int size){
@@ -471,6 +476,20 @@ void** updateUsedArray(void** used, int size){
 //true - person in used
 //TODO: implement
 bool inUsed(void** used, void* person){
+    int i = 0;
+    while (*(used + i)){
+        if (used[i] == person){
+            return true;
+        }
+    }
+    return false;
+}
 
+void setImprovedFlag(IsraeliQueue israeliQueue){
+    Node current = israeliQueue->queueStart;
+    while (current){
+        current->improvedPosition = false;
+        current = current->next;
+    }
 }
 

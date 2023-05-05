@@ -6,5 +6,6 @@ set(CMAKE_C_STANDARD 11)
 include_directories(.)
 
 add_executable(ex1_mtm
+        HackEnrollment.h
         IsraeliQueue.c
-        IsraeliQueue.h)
+        IsraeliQueue.h HackEnrollment.c testing.c)
